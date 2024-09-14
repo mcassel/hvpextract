@@ -1,5 +1,5 @@
 use std::{
-    error::Error, fs::{create_dir_all, File}, io::{Read, Write}, os::unix::fs::FileExt, path::Path, usize
+    env::current_dir, error::Error, fs::{create_dir_all, File}, io::{Read, Write}, os::unix::fs::FileExt, path::{Path, PathBuf}, usize
 };
 use compress::zlib;
 
@@ -16,8 +16,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     let in_file: &str = &args[1];
-    let out_dir = if args.len() > 2 { &args[2] } else { "" };
-    let out_dir = Path::new(out_dir);
+    let out_dir = if args.len() > 2 { PathBuf::from(&args[2]) } else { current_dir().unwrap() };
+    let out_dir = Path::new(&out_dir);
     if !out_dir.exists() {
         println!("ERROR: Output directory {} does not exist!", out_dir.to_str().unwrap_or("unknown"));
         return Ok(());
@@ -97,7 +97,7 @@ fn read_file(file: &mut File, path: &Path) {
 fn read_compressed(file: &mut File, offset: u32, comp_size: usize, size: usize) -> Vec<u8> {
     let compressed = read_uncompressed(file, offset, comp_size);
     let mut decompressed = vec![0; size];
-    _ = zlib::Decoder::new(&*compressed).read_to_end(&mut decompressed);
+    _ = zlib::Decoder::new(compressed.as_slice()).read_to_end(&mut decompressed);
     decompressed
 }
 
